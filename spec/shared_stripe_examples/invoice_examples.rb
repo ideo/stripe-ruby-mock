@@ -112,7 +112,7 @@ shared_examples 'Invoice API' do
     let(:coupon_pctoff) { @teardown_coupon_pctoff = true; Stripe::Coupon.create(id: '50%OFF', currency: 'usd', percent_off: 50, duration: 'repeating', duration_in_months: 6) }
     let(:plan)          { @teardown_plan = true; Stripe::Plan.create(id: '50m', amount: 50_00, interval: 'month', product: { name: '50m' }, currency: 'usd') }
     let(:quantity)      { 3 }
-    let(:subscription)  { @teardown_subscription = true; Stripe::Subscription.create(plan: plan.id, customer: customer.id, quantity: quantity) }
+    let(:subscription)  { Stripe::Subscription.create(plan: plan.id, customer: customer.id, quantity: quantity) }
 
     before(with_customer:         true) { customer }
     before(with_coupon_amtoff:    true) { coupon_amtoff }
@@ -122,11 +122,11 @@ shared_examples 'Invoice API' do
     before(with_plan:             true) { plan }
     before(with_subscription:     true) { subscription }
 
-    after { subscription.delete   rescue nil if @teardown_subscription }
-    after { plan.delete           rescue nil if @teardown_plan }
-    after { coupon_pctoff.delete  rescue nil if @teardown_coupon_pctoff }
-    after { coupon_amtoff.delete  rescue nil if @teardown_coupon_amtoff }
-    after { customer.delete       rescue nil if @teardown_customer }
+    # after { subscription.delete   rescue nil if @teardown_subscription }
+    # after { plan.delete           rescue nil if @teardown_plan }
+    # after { coupon_pctoff.delete  rescue nil if @teardown_coupon_pctoff }
+    # after { coupon_amtoff.delete  rescue nil if @teardown_coupon_amtoff }
+    # after { customer.delete       rescue nil if @teardown_customer }
 
     describe 'parameter validation' do
       it 'fails without parameters' do
@@ -341,8 +341,8 @@ shared_examples 'Invoice API' do
             expect(upcoming.lines.data[1].quantity).to eq new_quantity
           end
 
-          after { new_monthly_plan.delete rescue nil if @teardown_monthly_plan }
-          after { new_yearly_plan.delete rescue nil if @teardown_yearly_plan }
+          # after { new_monthly_plan.delete rescue nil if @teardown_monthly_plan }
+          # after { new_yearly_plan.delete rescue nil if @teardown_yearly_plan }
         end
       end
 
@@ -359,7 +359,7 @@ shared_examples 'Invoice API' do
           expect(line.amount).to eq 150_00
           # line period is for the NEXT subscription cycle
           expect(line.period.start).to be_within(1).of subscription.current_period_end
-          expect(line.period.end).to be_within(1).of (Time.at(subscription.current_period_end).to_datetime >> 1).to_time.to_i # +1 month
+          expect(Time.at(line.period.end).month).to be_within(1).of (Time.at(subscription.current_period_end).to_datetime >> 1).month # +1 month
         end
       end
 
